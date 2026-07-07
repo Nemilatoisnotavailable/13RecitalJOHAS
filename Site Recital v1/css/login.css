@@ -1,0 +1,305 @@
+/* ===========================
+   JOHAS 2026 - LOGIN
+   =========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html,
+body{
+    width:100%;
+    height:100%;
+}
+
+body{
+
+    font-family:"Libre Baskerville", serif;
+
+    color:#14395B;
+
+    background:#F4F0E7;
+
+    overflow:hidden;
+
+}
+
+/* -------------------------
+   FUNDO
+------------------------- */
+
+.background{
+
+    position:fixed;
+
+    inset:0;
+
+    background-image:url("../assets/Fundo.png");
+
+    background-size:cover;
+
+    background-position:center;
+
+    background-repeat:no-repeat;
+
+    z-index:-3;
+
+}
+
+/* -------------------------
+   RAMO
+------------------------- */
+
+.ramo{
+
+    position:fixed;
+
+    left:0;
+
+    top:0;
+
+    height:100vh;
+
+    width:auto;
+
+    pointer-events:none;
+
+    z-index:-2;
+
+}
+
+/* -------------------------
+   CONTAINER
+------------------------- */
+
+.login-container{
+
+    width:min(440px,90vw);
+
+    height:100vh;
+
+    margin:auto;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+/* -------------------------
+   LOGO
+------------------------- */
+
+.logo{
+
+    width:140px;
+
+    height:auto;
+
+    margin-bottom:28px;
+
+}
+
+/* -------------------------
+   TÍTULO
+------------------------- */
+
+h1{
+
+    font-size:3rem;
+
+    font-weight:400;
+
+    margin-bottom:48px;
+
+    letter-spacing:.5px;
+
+}
+
+/* -------------------------
+   FORMULÁRIO
+------------------------- */
+
+form{
+
+    width:100%;
+
+}
+
+/* -------------------------
+   CAMPOS
+------------------------- */
+
+.input-box{
+
+    width:100%;
+
+    margin-bottom:24px;
+
+}
+
+.input-box input{
+
+    width:100%;
+
+    height:58px;
+
+    padding:0 22px;
+
+    font-size:1.05rem;
+
+    font-family:inherit;
+
+    color:#14395B;
+
+    background:rgba(255,255,255,.55);
+
+    border:2px solid #14395B;
+
+    border-radius:14px;
+
+    outline:none;
+
+    transition:.2s;
+
+}
+
+.input-box input::placeholder{
+
+    color:#4F6478;
+
+}
+
+.input-box input:focus{
+
+    background:white;
+
+    box-shadow:0 0 0 4px rgba(20,57,91,.10);
+
+}
+
+/* -------------------------
+   BOTÃO
+------------------------- */
+
+button{
+
+    width:100%;
+
+    height:58px;
+
+    margin-top:8px;
+
+    border:none;
+
+    border-radius:14px;
+
+    background:#14395B;
+
+    color:white;
+
+    font-family:inherit;
+
+    font-size:1rem;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+button:hover{
+
+    background:#0E2E49;
+
+}
+
+button:active{
+
+    transform:scale(.98);
+
+}
+
+/* -------------------------
+   RODAPÉ
+------------------------- */
+
+footer{
+
+    position:fixed;
+
+    right:36px;
+
+    bottom:26px;
+
+    color:#14395B;
+
+    font-size:.95rem;
+
+    opacity:.85;
+
+}
+
+/* -------------------------
+   TABLETS
+------------------------- */
+
+@media (max-width:900px){
+
+    .logo{
+
+        width:120px;
+
+    }
+
+    h1{
+
+        font-size:2.6rem;
+
+    }
+
+}
+
+/* -------------------------
+   CELULARES
+------------------------- */
+
+@media (max-width:600px){
+
+    .ramo{
+
+        opacity:.18;
+
+    }
+
+    .login-container{
+
+        width:92vw;
+
+    }
+
+    h1{
+
+        font-size:2.2rem;
+
+        margin-bottom:36px;
+
+    }
+
+    footer{
+
+        right:16px;
+
+        bottom:16px;
+
+        font-size:.8rem;
+
+    }
+
+}
