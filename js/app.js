@@ -26,6 +26,9 @@ const state = {
     login: "",
     token: "",
     poema: null,
+    submittedNote: "",
+    pendingReplacementNote: "",
+    isEditingSubmittedNote: false,
     classificationData: null,
     selectedCategory: "A",
     selectedCriterion: "declamacao",
@@ -69,6 +72,7 @@ const loginCredentials = Array.from(document.querySelectorAll("#loginCredentials
 const senhaInput = document.querySelector("#senha");
 const notaInput = document.querySelector("#nota");
 const gradeBlock = document.querySelector("#gradeBlock");
+const editNoteButton = document.querySelector("#editNoteButton");
 const waitingPanel = document.querySelector("#waitingPanel");
 const sendButton = evaluationForm.querySelector(".send-button");
 const categoryButtons = Array.from(document.querySelectorAll("[data-category]"));
@@ -322,6 +326,65 @@ function setWaitingForJurors(isWaiting) {
     gradeBlock.hidden = isWaiting;
     waitingPanel.hidden = !isWaiting;
     notaInput.disabled = isWaiting;
+
+    if (isWaiting) {
+        editNoteButton.hidden = true;
+    }
+}
+
+function lockSubmittedNote(note) {
+    const noteText = String(note || "").trim();
+
+    state.submittedNote = noteText;
+    state.pendingReplacementNote = "";
+    state.isEditingSubmittedNote = false;
+    gradeBlock.classList.add("is-submitted");
+    gradeBlock.classList.remove("is-editing");
+    notaInput.readOnly = true;
+    notaInput.disabled = false;
+    notaInput.value = noteText;
+    notaInput.placeholder = "NOTA";
+    editNoteButton.hidden = false;
+    setWaitingForJurors(false);
+    setMessage(evaluationMessage, `Enviada a nota ${noteText}`, "success");
+}
+
+function unlockSubmittedNoteForEditing() {
+    if (!state.submittedNote) {
+        return;
+    }
+
+    state.isEditingSubmittedNote = true;
+    state.pendingReplacementNote = "";
+    gradeBlock.classList.remove("is-submitted");
+    gradeBlock.classList.add("is-editing");
+    notaInput.readOnly = false;
+    notaInput.disabled = false;
+    notaInput.value = "";
+    notaInput.placeholder = "NOTA";
+    editNoteButton.hidden = true;
+    setWaitingForJurors(false);
+    setMessage(
+        evaluationMessage,
+        `Enviada a nota ${state.submittedNote}. Digite a nova nota.`,
+        "success"
+    );
+    notaInput.focus();
+}
+
+function resetNoteEntry({ clearValue = true } = {}) {
+    state.submittedNote = "";
+    state.pendingReplacementNote = "";
+    state.isEditingSubmittedNote = false;
+    gradeBlock.classList.remove("is-submitted", "is-editing");
+    notaInput.readOnly = false;
+    notaInput.disabled = false;
+    notaInput.placeholder = "NOTA";
+    editNoteButton.hidden = true;
+
+    if (clearValue) {
+        notaInput.value = "";
+    }
 }
 
 function formatGrade(value, options = {}) {
@@ -389,6 +452,40 @@ function renderPoem(poem) {
     fitPoemText();
 }
 
+function applyEvaluationState(poem, { poemChanged = false } = {}) {
+    const evaluation = poem?.avaliacao || {};
+    const sentNote = evaluation.enviada ? String(evaluation.nota || "").trim() : "";
+    const keepEditing = Boolean(
+        sentNote
+        && !poemChanged
+        && state.isEditingSubmittedNote
+        && document.activeElement === notaInput
+    );
+
+    state.submittedNote = sentNote;
+    state.pendingReplacementNote = "";
+    setWaitingForJurors(false);
+
+    if (sentNote) {
+        if (keepEditing) {
+            setMessage(
+                evaluationMessage,
+                `Enviada a nota ${sentNote}. Digite a nova nota.`,
+                "success"
+            );
+            return;
+        }
+
+        lockSubmittedNote(sentNote);
+        return;
+    }
+
+    resetNoteEntry({
+        clearValue: poemChanged || document.activeElement !== notaInput
+    });
+    setMessage(evaluationMessage, "");
+}
+
 function renderAdminData(data = {}) {
     const poem = data.poema || data || {};
     const medias = data.medias || {};
@@ -432,6 +529,7 @@ async function loadCurrentPoem({ silent = false } = {}) {
     }
 
     poemRefreshInProgress = true;
+    const previousPoemId = state.poema?.id ?? "";
 
     if (!silent) {
         setMessage(poemMessage, "Carregando poema atual...", "success");
@@ -447,7 +545,10 @@ async function loadCurrentPoem({ silent = false } = {}) {
     }
 
     try {
-        const response = await fetch(buildScriptUrl({ acao: "poema" }), {
+        const response = await fetch(buildScriptUrl({
+            acao: "poema",
+            token: state.token
+        }), {
             method: "GET",
             cache: "no-store"
         });
@@ -463,6 +564,9 @@ async function loadCurrentPoem({ silent = false } = {}) {
         }
 
         renderPoem(data);
+        applyEvaluationState(data, {
+            poemChanged: String(previousPoemId) !== String(data.id ?? "")
+        });
         setMessage(poemMessage, "");
     } catch (error) {
         if (!silent) {
@@ -672,6 +776,10 @@ function buildRankingTitle(item) {
 }
 
 function sanitizeNoteInput() {
+    if (notaInput.readOnly) {
+        return;
+    }
+
     const separatorIndex = notaInput.value.search(/[.,]/);
     const integerPortion = separatorIndex >= 0
         ? notaInput.value.slice(0, separatorIndex)
@@ -715,6 +823,29 @@ function getEvaluationPayload() {
         turma: state.poema?.turma ?? "",
         nota: note
     };
+}
+
+function shouldSendEvaluation(note) {
+    if (!state.submittedNote) {
+        return true;
+    }
+
+    if (!state.isEditingSubmittedNote) {
+        setMessage(
+            evaluationMessage,
+            `Enviada a nota ${state.submittedNote}. Clique no ícone de edição para alterar.`,
+            "success"
+        );
+        return false;
+    }
+
+    if (note === state.submittedNote) {
+        lockSubmittedNote(note);
+        return false;
+    }
+
+    state.pendingReplacementNote = "";
+    return true;
 }
 
 async function sendEvaluation(payload) {
@@ -836,6 +967,10 @@ evaluationForm.addEventListener("submit", async (event) => {
         return;
     }
 
+    if (!shouldSendEvaluation(payload.nota)) {
+        return;
+    }
+
     sendButton.disabled = true;
     setMessage(evaluationMessage, "Enviando avaliação...", "success");
 
@@ -846,10 +981,8 @@ evaluationForm.addEventListener("submit", async (event) => {
             console.info("Avaliação pronta para envio:", payload);
         }
 
-        setMessage(evaluationMessage, "", "success");
-        evaluationForm.reset();
         document.querySelector("#jurado").value = state.usuario;
-        setWaitingForJurors(true);
+        lockSubmittedNote(payload.nota);
     } catch (error) {
         setMessage(evaluationMessage, error.message || "Não foi possível enviar a avaliação. Tente novamente.");
     } finally {
@@ -860,6 +993,19 @@ evaluationForm.addEventListener("submit", async (event) => {
 notaInput.addEventListener("input", sanitizeNoteInput);
 
 notaInput.addEventListener("keydown", (event) => {
+    if (notaInput.readOnly) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            setMessage(
+                evaluationMessage,
+                `Enviada a nota ${state.submittedNote}. Clique no ícone de edição para alterar.`,
+                "success"
+            );
+            editNoteButton.focus();
+        }
+        return;
+    }
+
     if ([".", ",", "-", "+", "e", "E"].includes(event.key)) {
         event.preventDefault();
     }
@@ -869,6 +1015,8 @@ notaInput.addEventListener("keydown", (event) => {
         evaluationForm.requestSubmit();
     }
 });
+
+editNoteButton.addEventListener("click", unlockSubmittedNoteForEditing);
 
 categoryButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -928,8 +1076,12 @@ function logout() {
     state.login = "";
     state.token = "";
     state.poema = null;
+    state.submittedNote = "";
+    state.pendingReplacementNote = "";
+    state.isEditingSubmittedNote = false;
     state.classificationData = null;
     evaluationForm.reset();
+    resetNoteEntry();
     loginForm.reset();
     setWaitingForJurors(false);
     setMessage(evaluationMessage, "");

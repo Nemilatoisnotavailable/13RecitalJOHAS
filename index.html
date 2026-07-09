@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css?v=23">
+    <link rel="stylesheet" href="css/style.css?v=26">
 </head>
 <body>
     <div class="stage">
@@ -82,11 +82,19 @@
                                 <input type="text" id="jurado" name="jurado" placeholder="Nome do Jurado" autocomplete="name" required>
                             </label>
 
-                            <label class="grade-block" id="gradeBlock">
+                            <div class="grade-block" id="gradeBlock">
                                 <span>Nota:</span>
-                                <input class="ticket-grade" type="number" id="nota" name="nota" min="50" max="100" step="1" inputmode="numeric" pattern="[0-9]*" placeholder="NOTA" required>
+                                <div class="grade-input-row">
+                                    <input class="ticket-grade" type="text" id="nota" name="nota" inputmode="numeric" pattern="[0-9]*" placeholder="NOTA" required>
+                                    <button class="edit-note-button" id="editNoteButton" type="button" aria-label="Alterar nota" hidden>
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M4 20h4.5L19 9.5 14.5 5 4 15.5V20z"></path>
+                                            <path d="M13.5 6 18 10.5"></path>
+                                        </svg>
+                                    </button>
+                                </div>
                                 <small>(de 50 a 100)</small>
-                            </label>
+                            </div>
 
                             <div class="waiting-panel" id="waitingPanel" hidden>
                                 <button class="waiting-button" type="button" disabled>Aguardando os demais jurados</button>
@@ -180,6 +188,6 @@
         </footer>
     </div>
 
-    <script src="js/app.js?v=23"></script>
+    <script src="js/app.js?v=26"></script>
 </body>
 </html>
