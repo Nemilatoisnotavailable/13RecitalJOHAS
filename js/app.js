@@ -182,6 +182,7 @@ function setScreen(screenName) {
         stopAutoRefresh();
     } else {
         saveSession();
+        saveSessionEverywhere();
         startAutoRefresh();
     }
 }
@@ -234,6 +235,81 @@ function clearSavedSession() {
         localStorage.removeItem(SESSION_STORAGE_KEY);
     } catch (error) {
         console.warn("Não foi possível limpar a sessão local.", error);
+    }
+}
+
+function saveSessionEverywhere() {
+    if (!state.juradoId) {
+        return;
+    }
+
+    const sessionPayload = JSON.stringify({
+        usuario: state.usuario,
+        juradoId: state.juradoId,
+        login: state.login,
+        token: state.token,
+        currentScreen: state.currentScreen,
+        selectedCategory: state.selectedCategory,
+        selectedCriterion: state.selectedCriterion,
+        expiresAt: Date.now() + SESSION_DURATION_MS
+    });
+
+    try {
+        localStorage.setItem(SESSION_STORAGE_KEY, sessionPayload);
+    } catch (error) {
+        console.warn("Nao foi possivel salvar a sessao local.", error);
+    }
+
+    try {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, sessionPayload);
+    } catch (error) {
+        console.warn("Nao foi possivel salvar a sessao da aba.", error);
+    }
+}
+
+function readSavedSessionEverywhere() {
+    let rawSession = "";
+
+    try {
+        rawSession = localStorage.getItem(SESSION_STORAGE_KEY) || "";
+    } catch (error) {
+        console.warn("Nao foi possivel ler a sessao local.", error);
+    }
+
+    if (!rawSession) {
+        try {
+            rawSession = sessionStorage.getItem(SESSION_STORAGE_KEY) || "";
+        } catch (error) {
+            console.warn("Nao foi possivel ler a sessao da aba.", error);
+        }
+    }
+
+    if (!rawSession) {
+        return null;
+    }
+
+    try {
+        const savedSession = JSON.parse(rawSession);
+
+        if (!savedSession?.juradoId || Date.now() > Number(savedSession.expiresAt || 0)) {
+            clearSavedSessionEverywhere();
+            return null;
+        }
+
+        return savedSession;
+    } catch (error) {
+        clearSavedSessionEverywhere();
+        return null;
+    }
+}
+
+function clearSavedSessionEverywhere() {
+    clearSavedSession();
+
+    try {
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch (error) {
+        console.warn("Nao foi possivel limpar a sessao da aba.", error);
     }
 }
 
@@ -663,7 +739,7 @@ async function sendEvaluation(payload) {
 }
 
 async function restoreSavedSession() {
-    const savedSession = readSavedSession();
+    const savedSession = readSavedSessionEverywhere();
 
     if (!savedSession) {
         setScreen("login");
@@ -725,6 +801,8 @@ loginForm.addEventListener("submit", async (event) => {
     setMessage(loginMessage, "");
 
     if (String(state.juradoId) === "0") {
+        state.currentScreen = "admin";
+        saveSessionEverywhere();
         setScreen("admin");
         await loadAdminData();
         return;
@@ -732,6 +810,8 @@ loginForm.addEventListener("submit", async (event) => {
 
     document.querySelector("#jurado").value = state.usuario;
     setWaitingForJurors(false);
+    state.currentScreen = "evaluation";
+    saveSessionEverywhere();
     setScreen("evaluation");
     await loadCurrentPoem();
 });
@@ -794,6 +874,7 @@ categoryButtons.forEach((button) => {
     button.addEventListener("click", () => {
         state.selectedCategory = button.dataset.category || "A";
         saveSession();
+        saveSessionEverywhere();
         renderClassification();
     });
 });
@@ -802,6 +883,7 @@ criterionButtons.forEach((button) => {
     button.addEventListener("click", () => {
         state.selectedCriterion = button.dataset.criterion || "declamacao";
         saveSession();
+        saveSessionEverywhere();
         renderClassification();
     });
 });
@@ -835,8 +917,12 @@ window.addEventListener("resize", () => {
     }
 });
 
+window.addEventListener("beforeunload", () => {
+    saveSessionEverywhere();
+});
+
 function logout() {
-    clearSavedSession();
+    clearSavedSessionEverywhere();
     state.usuario = "";
     state.juradoId = "";
     state.login = "";
