@@ -1,0 +1,811 @@
+:root {
+    --blue: #003b5c;
+    --blue-soft: rgba(0, 59, 92, 0.34);
+    --blue-dim: rgba(214, 226, 234, 0.58);
+    --paper: rgba(255, 255, 255, 0.56);
+    --error: #8a2c2c;
+    --success: #1f6042;
+    font-size: min(1vw, 1.77777778vh);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    color: var(--blue);
+    background-color: #eef0ef;
+    background-image:
+        url("../assets/ramo png fraco.png"),
+        url("../assets/Fundo.png");
+    background-position:
+        center center,
+        center center;
+    background-repeat:
+        no-repeat,
+        no-repeat;
+    background-size:
+        cover,
+        cover;
+    font-family: "Libre Baskerville", Georgia, serif;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.stage {
+    position: relative;
+    width: 100rem;
+    height: 56.25rem;
+    overflow: hidden;
+    background: transparent;
+}
+
+.page-background,
+.app-shell,
+.screen {
+    position: absolute;
+    inset: 0;
+}
+
+.page-background {
+    z-index: 0;
+    background: transparent;
+}
+
+.app-shell {
+    z-index: 2;
+}
+
+.screen {
+    display: none;
+}
+
+.screen.is-active {
+    display: block;
+}
+
+.ticket-field,
+.ticket-grade,
+.ticket-small,
+.ticket-value,
+.waiting-button,
+.ranking-main,
+.ranking-sub,
+.ranking-score {
+    background: var(--blue);
+    clip-path: polygon(
+        4.2% 0,
+        95.8% 0,
+        96.1% 6%,
+        97.4% 13%,
+        100% 20%,
+        100% 80%,
+        97.4% 87%,
+        96.1% 94%,
+        95.8% 100%,
+        4.2% 100%,
+        3.9% 94%,
+        2.6% 87%,
+        0 80%,
+        0 20%,
+        2.6% 13%,
+        3.9% 6%
+    );
+    color: #fff;
+}
+
+.ticket-small,
+.login-submit,
+.admin-refresh {
+    border: 0;
+    color: var(--blue-dim);
+    background: var(--blue);
+    clip-path: polygon(9% 0, 91% 0, 93% 16%, 100% 24%, 100% 76%, 93% 84%, 91% 100%, 9% 100%, 7% 84%, 0 76%, 0 24%, 7% 16%);
+    font-style: italic;
+    font-weight: 700;
+}
+
+.ticket-small {
+    min-width: 6.1rem;
+    height: 2.25rem;
+    padding: 0 1rem;
+    font-size: 1rem;
+}
+
+.ticket-small.wide {
+    min-width: 10.8rem;
+}
+
+.ticket-small.is-selected {
+    color: #fff;
+}
+
+.ticket-small:hover,
+.login-submit:hover,
+.admin-refresh:hover {
+    opacity: 0.78;
+}
+
+.top-actions {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.45rem;
+    z-index: 4;
+    display: grid;
+    gap: 1.15rem;
+    justify-items: end;
+}
+
+.login-event-title {
+    position: absolute;
+    top: 8.1rem;
+    left: 9rem;
+    width: 88.5rem;
+    text-align: center;
+    font-size: 4.65rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.24;
+}
+
+.login-event-title span {
+    display: block;
+}
+
+.login-panel {
+    position: absolute;
+    top: 28.55rem;
+    left: 36.4rem;
+    width: 32rem;
+    text-align: center;
+}
+
+.login-panel h1 {
+    margin: 0 0 3.35rem;
+    font-size: 3.55rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 0.92;
+}
+
+.login-form {
+    position: relative;
+    display: grid;
+    gap: 2.45rem;
+    justify-items: center;
+}
+
+.ticket-field {
+    display: block;
+    width: 32rem;
+    height: 6.25rem;
+}
+
+.ticket-field input {
+    width: 100%;
+    height: 100%;
+    padding: 0 2.8rem;
+    border: 0;
+    outline: 0;
+    color: #fff;
+    background: transparent;
+    font-size: 2.25rem;
+    font-style: italic;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ticket-field input::placeholder {
+    color: var(--blue-dim);
+    opacity: 1;
+}
+
+.ticket-field:focus-within,
+.ticket-grade:focus {
+    filter: drop-shadow(0 0 0.42rem rgba(0, 59, 92, 0.22));
+}
+
+.login-submit,
+.admin-refresh {
+    width: 12rem;
+    height: 3.25rem;
+    font-size: 1.35rem;
+}
+
+.top-actions .admin-refresh {
+    width: 8.8rem;
+    height: 2.25rem;
+    font-size: 1rem;
+}
+
+.send-button {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.form-message {
+    min-height: 1rem;
+    margin: 0;
+    color: var(--error);
+    text-align: center;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.form-message.success {
+    color: var(--success);
+}
+
+.login-form .form-message {
+    position: absolute;
+    top: 21.2rem;
+    left: 0;
+    width: 100%;
+}
+
+.logout-button {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.45rem;
+    z-index: 4;
+}
+
+.evaluation-layout {
+    position: absolute;
+    top: 1.4rem;
+    right: 1.35rem;
+    bottom: 4.35rem;
+    left: 3.8rem;
+}
+
+.poem-area {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: 66.1rem;
+    padding-right: 2.7rem;
+}
+
+.poem-area::after {
+    content: "";
+    position: absolute;
+    top: 8.75rem;
+    right: 0;
+    bottom: 5.8rem;
+    width: 0.18rem;
+    background: var(--blue);
+}
+
+.poem-header {
+    text-align: center;
+}
+
+.poem-header h1 {
+    margin: 0;
+    font-size: var(--title-font-size, 6rem);
+    font-style: italic;
+    font-weight: 700;
+    line-height: 0.98;
+}
+
+.poem-credits {
+    display: grid;
+    grid-template-columns: 13.2rem minmax(0, 36rem);
+    column-gap: 1.35rem;
+    row-gap: 0.05rem;
+    justify-content: center;
+    align-items: baseline;
+    margin: 0.8rem auto 2.7rem;
+}
+
+.poem-credits span {
+    justify-self: end;
+    font-size: 1.55rem;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.poem-credits strong {
+    justify-self: start;
+    font-size: 2.25rem;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.12;
+}
+
+.poem-text {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding-right: 0.45rem;
+    white-space: pre-line;
+    color: var(--blue);
+    font-size: var(--poem-font-size, 1.55rem);
+    font-weight: 700;
+    line-height: 1.47;
+}
+
+.poem-text.is-scrollable {
+    overflow: auto;
+}
+
+.poem-text::-webkit-scrollbar {
+    width: 0.35rem;
+}
+
+.poem-text::-webkit-scrollbar-thumb {
+    background: rgba(0, 59, 92, 0.32);
+}
+
+.loading-message {
+    min-height: 1rem;
+    margin: 0.65rem 0 0;
+    color: var(--error);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.jury-panel {
+    position: absolute;
+    top: 15.7rem;
+    right: 0.25rem;
+    width: 26rem;
+    text-align: center;
+}
+
+.jury-panel form {
+    display: grid;
+    justify-items: center;
+    gap: 2.6rem;
+}
+
+.jury-name {
+    display: block;
+    width: 100%;
+}
+
+.jury-name input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    color: var(--blue);
+    background: transparent;
+    font-size: 2.45rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.08;
+    text-align: center;
+}
+
+.jury-name input::placeholder {
+    color: var(--blue);
+    opacity: 1;
+}
+
+.grade-block {
+    display: grid;
+    justify-items: center;
+    gap: 0.95rem;
+    width: 21.1rem;
+    text-align: center;
+}
+
+.grade-block[hidden] {
+    display: none;
+}
+
+.grade-block > span {
+    font-size: 3.15rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+    opacity: 0.46;
+}
+
+.ticket-grade {
+    width: 21.1rem;
+    height: 6.25rem;
+    border: 0;
+    outline: 0;
+    padding: 0 1rem;
+    font-size: 3rem;
+    font-style: italic;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ticket-grade::placeholder {
+    color: rgba(255, 255, 255, 0.28);
+    opacity: 1;
+}
+
+.grade-block small {
+    color: var(--blue);
+    font-size: 1.55rem;
+    font-style: italic;
+}
+
+.jury-panel .form-message {
+    margin-top: -1.5rem;
+    font-size: 0.72rem;
+}
+
+.waiting-panel {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+}
+
+.waiting-panel[hidden] {
+    display: none;
+}
+
+.waiting-button {
+    width: 21.1rem;
+    height: 6.25rem;
+    padding: 0 1.55rem;
+    border: 0;
+    color: var(--blue-dim);
+    cursor: default;
+    font-size: 1.35rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+}
+
+.site-footer {
+    position: absolute;
+    right: 1.4rem;
+    bottom: 1.25rem;
+    z-index: 3;
+    display: none;
+    gap: 0.1rem;
+    text-align: right;
+    color: var(--blue);
+    font-size: 1.65rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+body.evaluation-open .site-footer,
+body.admin-open .site-footer,
+body.classification-open .site-footer {
+    display: grid;
+}
+
+.admin-layout {
+    position: absolute;
+    inset: 1.2rem 4rem 4.4rem;
+}
+
+.admin-header {
+    text-align: center;
+}
+
+.admin-header h1 {
+    margin: 0;
+    font-size: var(--admin-title-font-size, 6.2rem);
+    font-style: italic;
+    font-weight: 700;
+    line-height: 0.96;
+}
+
+.admin-credits {
+    display: grid;
+    grid-template-columns: 11.4rem minmax(0, 34rem);
+    column-gap: 1.15rem;
+    row-gap: 0.05rem;
+    justify-content: center;
+    align-items: baseline;
+    margin: 1rem auto 0;
+}
+
+.admin-credits span {
+    justify-self: end;
+    font-size: 1.45rem;
+    font-style: italic;
+}
+
+.admin-credits strong {
+    justify-self: start;
+    font-size: 2.28rem;
+    font-style: italic;
+    line-height: 1.08;
+}
+
+.admin-body {
+    position: absolute;
+    top: 17rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.admin-jurors {
+    position: absolute;
+    top: 2.5rem;
+    left: 0.6rem;
+    width: 32rem;
+}
+
+.admin-jurors h2 {
+    position: absolute;
+    top: -4.1rem;
+    left: 24.6rem;
+    margin: 0;
+    font-size: 2.65rem;
+    font-style: italic;
+    line-height: 1;
+}
+
+.admin-juror-list {
+    display: grid;
+    gap: 1.35rem;
+}
+
+.admin-juror-row {
+    display: grid;
+    grid-template-columns: minmax(0, 24rem) 6.6rem;
+    gap: 1.25rem;
+    align-items: center;
+}
+
+.admin-juror-name {
+    overflow: hidden;
+    color: var(--blue);
+    font-size: 2.45rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.08;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ticket-value {
+    display: grid;
+    place-items: center;
+    min-width: 6.6rem;
+    height: 2.5rem;
+    padding: 0 0.85rem;
+    color: var(--blue-dim);
+    font-size: 1.12rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+}
+
+.admin-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0.6rem;
+    left: 45.2rem;
+    width: 0.22rem;
+    background: #000;
+}
+
+.admin-divider::before,
+.admin-divider::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 50%;
+    background: #000;
+    transform: translateX(-50%);
+}
+
+.admin-divider::before {
+    top: -0.25rem;
+}
+
+.admin-divider::after {
+    bottom: -0.25rem;
+}
+
+.admin-averages {
+    position: absolute;
+    top: 8.1rem;
+    right: 7.3rem;
+    width: 41rem;
+    display: grid;
+    gap: 5.55rem;
+}
+
+.admin-average-row {
+    display: grid;
+    grid-template-columns: minmax(0, 27.5rem) 6.8rem;
+    gap: 2.2rem;
+    align-items: center;
+}
+
+.admin-average-row span {
+    color: var(--blue);
+    font-size: 2.65rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.05;
+    text-align: right;
+}
+
+.admin-layout .form-message {
+    position: absolute;
+    right: 12rem;
+    bottom: -1.35rem;
+    left: 12rem;
+}
+
+.classification-layout {
+    position: absolute;
+    inset: 2rem 4rem 4.2rem;
+}
+
+.classification-layout h1 {
+    margin: 0;
+    text-align: center;
+    font-size: 6rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 0.95;
+}
+
+.classification-filters {
+    position: absolute;
+    top: 7.6rem;
+    left: 23.8rem;
+    display: grid;
+    grid-template-columns: 8.6rem repeat(3, 8.4rem);
+    gap: 1.1rem 1.5rem;
+    align-items: center;
+}
+
+.classification-filters span {
+    justify-self: end;
+    color: var(--blue);
+    font-size: 2rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.classification-filters .ticket-small {
+    min-width: 8.4rem;
+    height: 1.9rem;
+    padding: 0 0.55rem;
+    font-size: 0.78rem;
+}
+
+.classification-ranking {
+    position: absolute;
+    top: 18.2rem;
+    left: 5.8rem;
+    display: grid;
+    gap: 3.35rem;
+    width: 74rem;
+}
+
+.ranking-row {
+    display: grid;
+    grid-template-columns: 6rem 41.2rem 9rem;
+    gap: 1.8rem;
+    align-items: center;
+}
+
+.ranking-position {
+    color: var(--blue);
+    font-size: 4.1rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+    text-align: right;
+}
+
+.ranking-info {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.ranking-main,
+.ranking-sub {
+    display: grid;
+    place-items: center;
+    min-height: 3.95rem;
+    padding: 0 1.8rem;
+    color: var(--blue-dim);
+    font-size: 1.58rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+}
+
+.ranking-sub {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    min-height: 3.6rem;
+    padding: 0;
+}
+
+.ranking-sub span {
+    display: grid;
+    place-items: center;
+    min-height: 3.6rem;
+    min-width: 0;
+    padding: 0 0.45rem;
+    border-right: 0.2rem solid rgba(255, 255, 255, 0.92);
+    overflow: hidden;
+    font-size: 1.06rem;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ranking-sub strong {
+    display: grid;
+    place-items: center;
+    min-height: 3.6rem;
+    padding: 0 1.2rem;
+    font: inherit;
+}
+
+.ranking-score {
+    display: grid;
+    place-items: center;
+    min-width: 8.6rem;
+    min-height: 8rem;
+    padding: 0 0.7rem;
+    color: var(--blue-dim);
+    font-size: 2.6rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+}
+
+.classification-layout .form-message {
+    position: absolute;
+    right: 10rem;
+    bottom: 0;
+    left: 10rem;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

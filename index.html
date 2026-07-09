@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOHAS 2026 - Avaliação</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css?v=22">
+</head>
+<body>
+    <div class="stage">
+        <div class="page-background" aria-hidden="true"></div>
+        <div id="loginCredentials" hidden>
+            <span data-jurado-id="1" data-login="avaliador" data-senha="johas2026"></span>
+            <span data-jurado-id="0" data-login="admin" data-senha="johas2026"></span>
+            <span data-jurado-id="1" data-login="jurado01" data-senha="johas2026"></span>
+            <span data-jurado-id="2" data-login="jurado02" data-senha="johas2026"></span>
+            <span data-jurado-id="3" data-login="jurado03" data-senha="johas2026"></span>
+            <span data-jurado-id="4" data-login="jurado04" data-senha="johas2026"></span>
+            <span data-jurado-id="5" data-login="jurado05" data-senha="johas2026"></span>
+            <span data-jurado-id="6" data-login="jurado06" data-senha="johas2026"></span>
+            <span data-jurado-id="7" data-login="jurado07" data-senha="johas2026"></span>
+            <span data-jurado-id="8" data-login="jurado08" data-senha="johas2026"></span>
+        </div>
+
+        <main class="app-shell">
+            <section class="screen login-screen is-active" id="loginScreen" aria-labelledby="loginTitle">
+                <div class="login-event-title" aria-hidden="true">
+                    <span>13º Recital de Poesias</span>
+                    <span>JOHAS - 2026</span>
+                </div>
+
+                <div class="login-panel">
+                    <h1 id="loginTitle">Login</h1>
+
+                    <form class="login-form" id="loginForm">
+                        <label class="ticket-field">
+                            <span class="sr-only">Nome</span>
+                            <input type="text" id="usuario" name="usuario" placeholder="Nome" autocomplete="username" required>
+                        </label>
+
+                        <label class="ticket-field">
+                            <span class="sr-only">Senha</span>
+                            <input type="password" id="senha" name="senha" placeholder="Senha" autocomplete="current-password" required>
+                        </label>
+
+                        <p class="form-message" id="loginMessage" role="status" aria-live="polite"></p>
+
+                        <button class="login-submit" type="submit">Entrar</button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="screen evaluation-screen" id="evaluationScreen" aria-labelledby="evaluationTitle">
+                <button class="logout-button ticket-small" id="logoutButton" type="button">Sair</button>
+
+                <div class="evaluation-layout">
+                    <article class="poem-area" aria-live="polite">
+                        <header class="poem-header">
+                            <h1 id="evaluationTitle">Nome do Poema</h1>
+
+                            <div class="poem-credits">
+                                <span>de</span>
+                                <strong id="poemAuthor">Nome do Autor</strong>
+                                <span>declamado por</span>
+                                <strong id="poemDeclamador">Nome do Declamador</strong>
+                            </div>
+                        </header>
+
+                        <div class="poem-text" id="poemText"></div>
+                        <p class="loading-message" id="poemMessage" role="status"></p>
+                    </article>
+
+                    <aside class="jury-panel" aria-labelledby="juryTitle">
+                        <form id="evaluationForm">
+                            <label class="jury-name">
+                                <span class="sr-only" id="juryTitle">Nome do Jurado</span>
+                                <input type="text" id="jurado" name="jurado" placeholder="Nome do Jurado" autocomplete="name" required>
+                            </label>
+
+                            <label class="grade-block" id="gradeBlock">
+                                <span>Nota:</span>
+                                <input class="ticket-grade" type="number" id="nota" name="nota" min="50" max="100" step="1" inputmode="numeric" pattern="[0-9]*" placeholder="NOTA" required>
+                                <small>(de 50 a 100)</small>
+                            </label>
+
+                            <div class="waiting-panel" id="waitingPanel" hidden>
+                                <button class="waiting-button" type="button" disabled>Aguardando os demais jurados</button>
+                            </div>
+
+                            <p class="form-message" id="evaluationMessage" role="status" aria-live="polite"></p>
+
+                            <button class="send-button ticket-small" type="submit">Enviar</button>
+                        </form>
+                    </aside>
+                </div>
+            </section>
+
+            <section class="screen admin-screen" id="adminScreen" aria-labelledby="adminTitle">
+                <div class="top-actions">
+                    <button class="ticket-small" id="adminLogoutButton" type="button">Sair</button>
+                    <button class="ticket-small wide" id="openClassificationButton" type="button">Classificação Geral</button>
+                    <button class="admin-refresh" id="adminRefreshButton" type="button">Atualizar</button>
+                </div>
+
+                <div class="admin-layout">
+                    <header class="admin-header">
+                        <h1 id="adminTitle">Nome do Poema</h1>
+                        <div class="admin-credits">
+                            <span>de</span>
+                            <strong id="adminPoemAuthor">Nome do Autor</strong>
+                            <span>declamado por</span>
+                            <strong id="adminPoemDeclamador">Nome do Declamador</strong>
+                        </div>
+                    </header>
+
+                    <div class="admin-body">
+                        <section class="admin-jurors" aria-labelledby="adminJurorsTitle">
+                            <h2 id="adminJurorsTitle">Nota</h2>
+                            <div class="admin-juror-list" id="adminJurorList" aria-live="polite"></div>
+                        </section>
+
+                        <div class="admin-divider" aria-hidden="true"></div>
+
+                        <section class="admin-averages" aria-live="polite">
+                            <div class="admin-average-row">
+                                <span>Média da Declamação</span>
+                                <strong class="ticket-value" id="mediaDeclamacao">--------</strong>
+                            </div>
+                            <div class="admin-average-row">
+                                <span>Média do Poema</span>
+                                <strong class="ticket-value" id="mediaPoema">--------</strong>
+                            </div>
+                            <div class="admin-average-row">
+                                <span>Média Total</span>
+                                <strong class="ticket-value" id="mediaGeral">--------</strong>
+                            </div>
+                        </section>
+                    </div>
+
+                    <p class="form-message" id="adminMessage" role="status" aria-live="polite"></p>
+
+                </div>
+            </section>
+
+            <section class="screen classification-screen" id="classificationScreen" aria-labelledby="classificationTitle">
+                <div class="top-actions">
+                    <button class="ticket-small" id="classificationLogoutButton" type="button">Sair</button>
+                    <button class="ticket-small wide" id="backToAdminButton" type="button">Notas dos Jurados</button>
+                </div>
+
+                <div class="classification-layout">
+                    <h1 id="classificationTitle">Classificação Geral</h1>
+
+                    <div class="classification-filters" aria-label="Filtros da classificação">
+                        <span>Categoria</span>
+                        <button class="ticket-small is-selected" type="button" data-category="A">4ºs e 5ºs Anos</button>
+                        <button class="ticket-small" type="button" data-category="B">6ºs e 7ºs Anos</button>
+                        <button class="ticket-small" type="button" data-category="C">8ºs e 9ºs Anos</button>
+
+                        <span>Critério</span>
+                        <button class="ticket-small is-selected" type="button" data-criterion="declamacao">Declamação</button>
+                        <button class="ticket-small" type="button" data-criterion="poema">Poema</button>
+                        <button class="ticket-small" type="button" data-criterion="total">Total</button>
+                    </div>
+
+                    <div class="classification-ranking" id="classificationRanking" aria-live="polite"></div>
+                    <p class="form-message" id="classificationMessage" role="status" aria-live="polite"></p>
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <span>13º Recital de Poesias</span>
+            <span>JOHAS 2026</span>
+        </footer>
+    </div>
+
+    <script src="js/app.js?v=22"></script>
+</body>
+</html>
