@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css?v=26">
+    <link rel="stylesheet" href="css/style.css?v=27">
 </head>
 <body>
     <div class="stage">
@@ -126,6 +126,21 @@
                         </div>
                     </header>
 
+                    <section class="current-poem-control" aria-labelledby="currentPoemTitle">
+                        <h2 id="currentPoemTitle">Poema atual</h2>
+                        <div class="current-poem-categories" aria-label="Categoria do poema atual">
+                            <button class="ticket-small is-selected" type="button" data-current-category="A">4ºs e 5ºs Anos</button>
+                            <button class="ticket-small" type="button" data-current-category="B">6ºs e 7ºs Anos</button>
+                            <button class="ticket-small" type="button" data-current-category="C">8ºs e 9ºs Anos</button>
+                        </div>
+                        <label class="current-poem-select-wrap">
+                            <span class="sr-only">Selecionar poema atual</span>
+                            <select class="current-poem-select" id="currentPoemSelect">
+                                <option value="">ID / Nome do Poema / Autor / Declamador</option>
+                            </select>
+                        </label>
+                    </section>
+
                     <div class="admin-body">
                         <section class="admin-jurors" aria-labelledby="adminJurorsTitle">
                             <h2 id="adminJurorsTitle">Nota</h2>
@@ -188,6 +203,6 @@
         </footer>
     </div>
 
-    <script src="js/app.js?v=26"></script>
+    <script src="js/app.js?v=27"></script>
 </body>
 </html>

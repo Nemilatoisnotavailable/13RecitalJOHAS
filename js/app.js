@@ -32,6 +32,10 @@ const state = {
     classificationData: null,
     selectedCategory: "A",
     selectedCriterion: "declamacao",
+    currentPoemCategory: "",
+    currentPoemId: "",
+    currentPoemGroups: [],
+    currentPoemPickerTouched: false,
     currentScreen: "login"
 };
 
@@ -67,6 +71,7 @@ const mediaDeclamacao = document.querySelector("#mediaDeclamacao");
 const mediaPoema = document.querySelector("#mediaPoema");
 const mediaGeral = document.querySelector("#mediaGeral");
 const classificationRanking = document.querySelector("#classificationRanking");
+const currentPoemSelect = document.querySelector("#currentPoemSelect");
 
 const loginCredentials = Array.from(document.querySelectorAll("#loginCredentials [data-login][data-senha]"));
 const senhaInput = document.querySelector("#senha");
@@ -77,6 +82,7 @@ const waitingPanel = document.querySelector("#waitingPanel");
 const sendButton = evaluationForm.querySelector(".send-button");
 const categoryButtons = Array.from(document.querySelectorAll("[data-category]"));
 const criterionButtons = Array.from(document.querySelectorAll("[data-criterion]"));
+const currentPoemCategoryButtons = Array.from(document.querySelectorAll("[data-current-category]"));
 
 const POEM_FONT_MAX = 2.25;
 const POEM_FONT_MIN = 0.74;
@@ -452,6 +458,72 @@ function renderPoem(poem) {
     fitPoemText();
 }
 
+function getCategoryIdFromPoemId(poemId) {
+    return String(poemId || "").trim().charAt(0).toUpperCase();
+}
+
+function getCurrentPoemLabel(poem = {}) {
+    const id = String(poem.id || "").trim();
+    const name = String(poem.nome || poem.titulo || (id ? `Poema ${id}` : "")).trim();
+    const author = String(poem.autor || "").trim();
+    const declamador = String(poem.declamador || "").trim();
+
+    return [id, name, author, declamador].filter(Boolean).join(" / ");
+}
+
+function setCurrentPoemPickerDisabled(isDisabled) {
+    currentPoemCategoryButtons.forEach((button) => {
+        button.disabled = isDisabled;
+    });
+
+    currentPoemSelect.disabled = isDisabled || currentPoemSelect.options.length <= 1;
+}
+
+function renderCurrentPoemControl(data = {}) {
+    const control = data.controle || {};
+    const groups = Array.isArray(control.categorias) ? control.categorias : state.currentPoemGroups;
+    const currentId = String(control.poemaAtualId || data.poema?.id || "").trim();
+    const currentCategory = getCategoryIdFromPoemId(currentId);
+
+    state.currentPoemGroups = groups;
+    state.currentPoemId = currentId;
+
+    if (!state.currentPoemCategory || !state.currentPoemPickerTouched) {
+        state.currentPoemCategory = currentCategory || state.currentPoemCategory || "A";
+    }
+
+    const selectedCategory = state.currentPoemCategory || "A";
+    const selectedGroup = groups.find((group) => group.id === selectedCategory);
+    const poems = Array.isArray(selectedGroup?.poemas) ? selectedGroup.poemas : [];
+    const currentIdBelongsToCategory = getCategoryIdFromPoemId(currentId) === selectedCategory;
+    const hasCurrentOption = poems.some((poem) => String(poem.id) === currentId);
+    const placeholder = document.createElement("option");
+
+    placeholder.value = "";
+    placeholder.textContent = poems.length
+        ? "ID / Nome do Poema / Autor / Declamador"
+        : "Nenhum poema encontrado nesta categoria";
+    placeholder.disabled = true;
+
+    currentPoemSelect.replaceChildren(
+        placeholder,
+        ...poems.map((poem) => {
+            const option = document.createElement("option");
+            option.value = poem.id;
+            option.textContent = getCurrentPoemLabel(poem);
+            return option;
+        })
+    );
+
+    currentPoemSelect.value = currentIdBelongsToCategory && hasCurrentOption ? currentId : "";
+    currentPoemSelect.disabled = poems.length === 0;
+
+    currentPoemCategoryButtons.forEach((button) => {
+        const isSelected = button.dataset.currentCategory === selectedCategory;
+        button.classList.toggle("is-selected", isSelected);
+    });
+}
+
 function applyEvaluationState(poem, { poemChanged = false } = {}) {
     const evaluation = poem?.avaliacao || {};
     const sentNote = evaluation.enviada ? String(evaluation.nota || "").trim() : "";
@@ -504,6 +576,7 @@ function renderAdminData(data = {}) {
     mediaDeclamacao.textContent = formatGrade(medias.declamacao ?? data.mediaDeclamacao);
     mediaPoema.textContent = formatGrade(medias.poema ?? data.mediaPoema);
     mediaGeral.textContent = formatGrade(medias.geral ?? data.mediaGeral);
+    renderCurrentPoemControl(data);
 
     adminJurorList.replaceChildren(...jurorSlots.map((jurado) => {
         const row = document.createElement("div");
@@ -622,6 +695,66 @@ async function loadAdminData({ silent = false } = {}) {
         setMessage(adminMessage, error.message || "Não foi possível carregar as notas.");
     } finally {
         adminRefreshInProgress = false;
+    }
+}
+
+async function changeCurrentPoem(poemId) {
+    const selectedPoemId = String(poemId || "").trim();
+
+    if (!selectedPoemId) {
+        return;
+    }
+
+    if (selectedPoemId === state.currentPoemId) {
+        setMessage(adminMessage, `Poema atual já está em ${selectedPoemId}.`, "success");
+        return;
+    }
+
+    if (!APPS_SCRIPT_URL) {
+        setMessage(adminMessage, "Configure a URL do Apps Script para alterar o poema atual.");
+        return;
+    }
+
+    if (!state.token) {
+        setMessage(adminMessage, "Faça login como administrador para alterar o poema atual.");
+        return;
+    }
+
+    setCurrentPoemPickerDisabled(true);
+    setMessage(adminMessage, `Alterando poema atual para ${selectedPoemId}...`, "success");
+
+    try {
+        await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify({
+                acao: "poemaAtual",
+                token: state.token,
+                poemaId: selectedPoemId
+            })
+        });
+
+        state.currentPoemPickerTouched = false;
+        await loadAdminData({ silent: true });
+
+        if (state.currentPoemId !== selectedPoemId) {
+            throw new Error("Não foi possível confirmar a troca na planilha. Verifique se o Apps Script foi atualizado.");
+        }
+
+        setMessage(adminMessage, `Poema atual alterado para ${selectedPoemId}.`, "success");
+    } catch (error) {
+        setMessage(adminMessage, error.message || "Não foi possível alterar o poema atual.");
+        renderCurrentPoemControl({
+            controle: {
+                poemaAtualId: state.currentPoemId,
+                categorias: state.currentPoemGroups
+            }
+        });
+    } finally {
+        setCurrentPoemPickerDisabled(false);
     }
 }
 
@@ -1018,6 +1151,23 @@ notaInput.addEventListener("keydown", (event) => {
 
 editNoteButton.addEventListener("click", unlockSubmittedNoteForEditing);
 
+currentPoemCategoryButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        state.currentPoemCategory = button.dataset.currentCategory || "A";
+        state.currentPoemPickerTouched = true;
+        renderCurrentPoemControl({
+            controle: {
+                poemaAtualId: state.currentPoemId,
+                categorias: state.currentPoemGroups
+            }
+        });
+    });
+});
+
+currentPoemSelect.addEventListener("change", () => {
+    changeCurrentPoem(currentPoemSelect.value);
+});
+
 categoryButtons.forEach((button) => {
     button.addEventListener("click", () => {
         state.selectedCategory = button.dataset.category || "A";
@@ -1080,6 +1230,10 @@ function logout() {
     state.pendingReplacementNote = "";
     state.isEditingSubmittedNote = false;
     state.classificationData = null;
+    state.currentPoemCategory = "";
+    state.currentPoemId = "";
+    state.currentPoemGroups = [];
+    state.currentPoemPickerTouched = false;
     evaluationForm.reset();
     resetNoteEntry();
     loginForm.reset();
