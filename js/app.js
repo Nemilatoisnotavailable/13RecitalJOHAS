@@ -63,9 +63,11 @@ const poemTitle = document.querySelector("#evaluationTitle");
 const poemAuthor = document.querySelector("#poemAuthor");
 const poemDeclamador = document.querySelector("#poemDeclamador");
 const poemText = document.querySelector("#poemText");
+const poemCredits = document.querySelector(".poem-credits");
 const adminTitle = document.querySelector("#adminTitle");
 const adminPoemAuthor = document.querySelector("#adminPoemAuthor");
 const adminPoemDeclamador = document.querySelector("#adminPoemDeclamador");
+const adminCredits = document.querySelector(".admin-credits");
 const adminJurorList = document.querySelector("#adminJurorList");
 const mediaDeclamacao = document.querySelector("#mediaDeclamacao");
 const mediaPoema = document.querySelector("#mediaPoema");
@@ -84,9 +86,10 @@ const categoryButtons = Array.from(document.querySelectorAll("[data-category]"))
 const criterionButtons = Array.from(document.querySelectorAll("[data-criterion]"));
 const currentPoemCategoryButtons = Array.from(document.querySelectorAll("[data-current-category]"));
 
-const POEM_FONT_MAX = 2.25;
-const POEM_FONT_MIN = 0.74;
-const POEM_FONT_STEP = 0.05;
+const POEM_FONT_MAX = 1.65;
+const POEM_FONT_MIN = 0.72;
+const POEM_FONT_FALLBACK_MIN = 0.56;
+const POEM_FONT_STEP = 0.04;
 const AUTO_REFRESH_MS = 5000;
 const SESSION_STORAGE_KEY = "recitalJohasSession";
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
@@ -418,32 +421,102 @@ function fitElementFont(element, cssVariable, max, min, step) {
     requestAnimationFrame(() => {
         let size = max;
 
-        while (size > min && element.scrollWidth > element.clientWidth) {
+        while (
+            size > min
+            && (
+                element.scrollWidth > element.clientWidth + 1
+                || element.scrollHeight > element.clientHeight + 1
+            )
+        ) {
             size -= step;
             element.style.setProperty(cssVariable, `${size.toFixed(2)}rem`);
         }
     });
 }
 
+function fitPoemHeader() {
+    fitElementFont(poemTitle, "--title-font-size", 4.35, 2.05, 0.08);
+    fitElementFont(poemCredits, "--credit-font-size", 1.75, 1.02, 0.04);
+}
+
+function fitAdminHeader() {
+    fitElementFont(adminTitle, "--admin-title-font-size", 4.35, 2.05, 0.08);
+    fitElementFont(adminCredits, "--admin-credit-font-size", 1.7, 0.98, 0.04);
+}
+
+function getPoemColumnCount(text) {
+    const normalizedText = String(text || "").trim();
+    const characterCount = normalizedText.replace(/\s/g, "").length;
+    const lineCount = normalizedText ? normalizedText.split(/\r?\n/).length : 0;
+
+    if (characterCount > 900 || lineCount > 44) {
+        return 3;
+    }
+
+    if (characterCount > 330 || lineCount > 20) {
+        return 2;
+    }
+
+    return 1;
+}
+
+function poemTextOverflows() {
+    return (
+        poemText.scrollWidth > poemText.clientWidth + 1
+        || poemText.scrollHeight > poemText.clientHeight + 1
+    );
+}
+
 function fitPoemText() {
-    poemText.classList.remove("is-scrollable");
+    const text = state.poema?.texto || poemText.textContent || "";
+    let columns = getPoemColumnCount(text);
+    let size = POEM_FONT_MAX;
+
+    poemText.style.setProperty("--poem-columns", columns);
     poemText.style.setProperty("--poem-font-size", `${POEM_FONT_MAX}rem`);
 
     requestAnimationFrame(() => {
-        let size = POEM_FONT_MAX;
+        while (true) {
+            while (size > POEM_FONT_MIN && poemTextOverflows()) {
+                size -= POEM_FONT_STEP;
+                poemText.style.setProperty("--poem-font-size", `${size.toFixed(2)}rem`);
+            }
 
-        while (
-            size > POEM_FONT_MIN
-            && poemText.scrollHeight > poemText.clientHeight
-        ) {
+            if (columns < 3 && (poemTextOverflows() || size < 1.02)) {
+                columns += 1;
+                size = POEM_FONT_MAX;
+                poemText.style.setProperty("--poem-columns", columns);
+                poemText.style.setProperty("--poem-font-size", `${size}rem`);
+                continue;
+            }
+
+            break;
+        }
+
+        while (size > POEM_FONT_FALLBACK_MIN && poemTextOverflows()) {
             size -= POEM_FONT_STEP;
             poemText.style.setProperty("--poem-font-size", `${size.toFixed(2)}rem`);
         }
-
-        if (poemText.scrollHeight > poemText.clientHeight) {
-            poemText.classList.add("is-scrollable");
-        }
     });
+}
+
+function renderPoemText(text) {
+    const normalizedText = String(text || "")
+        .replace(/\r\n?/g, "\n")
+        .trim();
+
+    if (!normalizedText) {
+        poemText.replaceChildren();
+        return;
+    }
+
+    const stanzas = normalizedText.split(/\n\s*\n+/).map((stanza) => {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = stanza.trim();
+        return paragraph;
+    });
+
+    poemText.replaceChildren(...stanzas);
 }
 
 function renderPoem(poem) {
@@ -453,8 +526,8 @@ function renderPoem(poem) {
     poemTitle.textContent = poemLabel;
     poemAuthor.textContent = poem.autor || "Nome do Autor";
     poemDeclamador.textContent = poem.declamador || poem.titulo || "Nome do Declamador";
-    poemText.textContent = poem.texto || "";
-    fitElementFont(poemTitle, "--title-font-size", 6, 2.7, 0.12);
+    renderPoemText(poem.texto);
+    fitPoemHeader();
     fitPoemText();
 }
 
@@ -593,7 +666,7 @@ function renderAdminData(data = {}) {
         return row;
     }));
 
-    fitElementFont(adminTitle, "--admin-title-font-size", 6.2, 2.7, 0.12);
+    fitAdminHeader();
 }
 
 async function loadCurrentPoem({ silent = false } = {}) {
@@ -1206,12 +1279,12 @@ backToAdminButton.addEventListener("click", async () => {
 
 window.addEventListener("resize", () => {
     if (evaluationScreen.classList.contains("is-active")) {
-        fitElementFont(poemTitle, "--title-font-size", 6, 2.7, 0.12);
+        fitPoemHeader();
         fitPoemText();
     }
 
     if (adminScreen.classList.contains("is-active")) {
-        fitElementFont(adminTitle, "--admin-title-font-size", 6.2, 2.7, 0.12);
+        fitAdminHeader();
     }
 });
 
