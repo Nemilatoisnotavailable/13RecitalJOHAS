@@ -365,7 +365,8 @@ button {
     padding: 0.45rem 0.8rem 0 0;
     column-count: var(--poem-columns, 1);
     column-fill: auto;
-    column-gap: 2.15rem;
+    column-gap: 2.5rem;
+    column-rule: 0.12rem solid rgba(0, 59, 92, 0.28);
     color: var(--blue);
     font-size: var(--poem-font-size, 1.5rem);
     font-weight: 700;
