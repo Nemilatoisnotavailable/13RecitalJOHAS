@@ -36,6 +36,8 @@ const state = {
     currentPoemId: "",
     currentPoemGroups: [],
     currentPoemPickerTouched: false,
+    pendingCurrentPoemConfirmation: null,
+    pendingNoteConfirmation: null,
     currentScreen: "login"
 };
 
@@ -396,6 +398,17 @@ function resetNoteEntry({ clearValue = true } = {}) {
     }
 }
 
+function restoreNoteAfterSendFailure(attemptedNote, previousSubmittedNote) {
+    resetNoteEntry({ clearValue: false });
+    notaInput.value = String(attemptedNote || "").trim();
+
+    if (previousSubmittedNote) {
+        state.submittedNote = previousSubmittedNote;
+        state.isEditingSubmittedNote = true;
+        gradeBlock.classList.add("is-editing");
+    }
+}
+
 function formatGrade(value, options = {}) {
     if (value === "" || value === null || typeof value === "undefined") {
         return options.placeholder || "--------";
@@ -555,8 +568,18 @@ function setCurrentPoemPickerDisabled(isDisabled) {
 function renderCurrentPoemControl(data = {}) {
     const control = data.controle || {};
     const groups = Array.isArray(control.categorias) ? control.categorias : state.currentPoemGroups;
-    const currentId = String(control.poemaAtualId || data.poema?.id || "").trim();
+    const confirmedId = String(control.poemaAtualId || data.poema?.id || "").trim();
+    const pendingConfirmation = state.pendingCurrentPoemConfirmation;
+    const pendingIsConfirmed = pendingConfirmation?.poemId === confirmedId;
+    const pendingHasExpired = pendingConfirmation && Date.now() >= pendingConfirmation.expiresAt;
+    const currentId = pendingConfirmation && !pendingIsConfirmed && !pendingHasExpired
+        ? pendingConfirmation.poemId
+        : confirmedId;
     const currentCategory = getCategoryIdFromPoemId(currentId);
+
+    if (pendingIsConfirmed || pendingHasExpired) {
+        state.pendingCurrentPoemConfirmation = null;
+    }
 
     state.currentPoemGroups = groups;
     state.currentPoemId = currentId;
@@ -600,6 +623,25 @@ function renderCurrentPoemControl(data = {}) {
 function applyEvaluationState(poem, { poemChanged = false } = {}) {
     const evaluation = poem?.avaliacao || {};
     const sentNote = evaluation.enviada ? String(evaluation.nota || "").trim() : "";
+    const poemId = String(poem?.id || "").trim();
+    const pendingConfirmation = state.pendingNoteConfirmation;
+    const pendingMatchesPoem = pendingConfirmation?.poemId === poemId;
+    const pendingIsConfirmed = pendingMatchesPoem && sentNote === pendingConfirmation.note;
+    const pendingHasExpired = pendingMatchesPoem && Date.now() >= pendingConfirmation.expiresAt;
+
+    if (pendingConfirmation && !pendingMatchesPoem && poemChanged) {
+        state.pendingNoteConfirmation = null;
+    }
+
+    if (pendingMatchesPoem && !pendingIsConfirmed && !pendingHasExpired) {
+        lockSubmittedNote(pendingConfirmation.note);
+        return;
+    }
+
+    if (pendingMatchesPoem && (pendingIsConfirmed || pendingHasExpired)) {
+        state.pendingNoteConfirmation = null;
+    }
+
     const keepEditing = Boolean(
         sentNote
         && !poemChanged
@@ -762,6 +804,18 @@ async function loadAdminData({ silent = false } = {}) {
             throw new Error(data.erro || "Não foi possível carregar as notas.");
         }
 
+        const confirmedPoemId = String(data.controle?.poemaAtualId || data.poema?.id || "").trim();
+        const pendingConfirmation = state.pendingCurrentPoemConfirmation;
+        const shouldWaitForConfirmation = Boolean(
+            pendingConfirmation
+            && confirmedPoemId !== pendingConfirmation.poemId
+            && Date.now() < pendingConfirmation.expiresAt
+        );
+
+        if (shouldWaitForConfirmation) {
+            return;
+        }
+
         renderAdminData(data);
         setMessage(adminMessage, "", "success");
     } catch (error) {
@@ -773,6 +827,7 @@ async function loadAdminData({ silent = false } = {}) {
 
 async function changeCurrentPoem(poemId) {
     const selectedPoemId = String(poemId || "").trim();
+    const previousPoemId = state.currentPoemId;
 
     if (!selectedPoemId) {
         return;
@@ -793,8 +848,21 @@ async function changeCurrentPoem(poemId) {
         return;
     }
 
+    state.currentPoemPickerTouched = false;
+    state.pendingCurrentPoemConfirmation = null;
+    renderCurrentPoemControl({
+        controle: {
+            poemaAtualId: selectedPoemId,
+            categorias: state.currentPoemGroups
+        }
+    });
+    state.pendingCurrentPoemConfirmation = {
+        poemId: selectedPoemId,
+        previousPoemId,
+        expiresAt: Date.now() + AUTO_REFRESH_MS
+    };
     setCurrentPoemPickerDisabled(true);
-    setMessage(adminMessage, `Alterando poema atual para ${selectedPoemId}...`, "success");
+    setMessage(adminMessage, `Poema atual selecionado: ${selectedPoemId}. Confirmando na planilha...`, "success");
 
     try {
         await fetch(APPS_SCRIPT_URL, {
@@ -810,19 +878,13 @@ async function changeCurrentPoem(poemId) {
             })
         });
 
-        state.currentPoemPickerTouched = false;
-        await loadAdminData({ silent: true });
-
-        if (state.currentPoemId !== selectedPoemId) {
-            throw new Error("Não foi possível confirmar a troca na planilha. Verifique se o Apps Script foi atualizado.");
-        }
-
-        setMessage(adminMessage, `Poema atual alterado para ${selectedPoemId}.`, "success");
+        setMessage(adminMessage, `Poema atual selecionado: ${selectedPoemId}.`, "success");
     } catch (error) {
+        state.pendingCurrentPoemConfirmation = null;
         setMessage(adminMessage, error.message || "Não foi possível alterar o poema atual.");
         renderCurrentPoemControl({
             controle: {
-                poemaAtualId: state.currentPoemId,
+                poemaAtualId: previousPoemId,
                 categorias: state.currentPoemGroups
             }
         });
@@ -1177,8 +1239,16 @@ evaluationForm.addEventListener("submit", async (event) => {
         return;
     }
 
+    const previousSubmittedNote = state.submittedNote;
+
+    state.pendingNoteConfirmation = {
+        poemId: String(payload.poemaId || ""),
+        note: String(payload.nota),
+        previousSubmittedNote,
+        expiresAt: Date.now() + AUTO_REFRESH_MS
+    };
     sendButton.disabled = true;
-    setMessage(evaluationMessage, "Enviando avaliação...", "success");
+    lockSubmittedNote(payload.nota);
 
     try {
         const result = await sendEvaluation(payload);
@@ -1188,8 +1258,9 @@ evaluationForm.addEventListener("submit", async (event) => {
         }
 
         document.querySelector("#jurado").value = state.usuario;
-        lockSubmittedNote(payload.nota);
     } catch (error) {
+        state.pendingNoteConfirmation = null;
+        restoreNoteAfterSendFailure(payload.nota, previousSubmittedNote);
         setMessage(evaluationMessage, error.message || "Não foi possível enviar a avaliação. Tente novamente.");
     } finally {
         sendButton.disabled = false;
@@ -1307,6 +1378,8 @@ function logout() {
     state.currentPoemId = "";
     state.currentPoemGroups = [];
     state.currentPoemPickerTouched = false;
+    state.pendingCurrentPoemConfirmation = null;
+    state.pendingNoteConfirmation = null;
     evaluationForm.reset();
     resetNoteEntry();
     loginForm.reset();
