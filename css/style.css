@@ -404,24 +404,25 @@ button {
 .jury-name {
     display: block;
     width: 100%;
+    height: 5.4rem;
 }
 
-.jury-name input {
+.jury-name-value {
+    display: grid;
+    place-items: center;
     width: 100%;
-    border: 0;
-    outline: 0;
+    height: 100%;
+    padding: 0 0.35rem;
+    overflow: hidden;
     color: var(--blue);
     background: transparent;
-    font-size: 2.45rem;
+    font-size: var(--jury-name-font-size, 2.25rem);
     font-style: italic;
     font-weight: 700;
     line-height: 1.08;
+    overflow-wrap: anywhere;
     text-align: center;
-}
-
-.jury-name input::placeholder {
-    color: var(--blue);
-    opacity: 1;
+    text-wrap: balance;
 }
 
 .grade-block {

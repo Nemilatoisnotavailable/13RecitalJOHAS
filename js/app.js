@@ -76,6 +76,7 @@ const mediaPoema = document.querySelector("#mediaPoema");
 const mediaGeral = document.querySelector("#mediaGeral");
 const classificationRanking = document.querySelector("#classificationRanking");
 const currentPoemSelect = document.querySelector("#currentPoemSelect");
+const juryNameDisplay = document.querySelector("#juradoDisplay");
 
 const loginCredentials = Array.from(document.querySelectorAll("#loginCredentials [data-login][data-senha]"));
 const senhaInput = document.querySelector("#senha");
@@ -450,6 +451,17 @@ function fitElementFont(element, cssVariable, max, min, step) {
 function fitPoemHeader() {
     fitElementFont(poemTitle, "--title-font-size", 4.35, 2.05, 0.08);
     fitElementFont(poemCredits, "--credit-font-size", 1.75, 1.02, 0.04);
+}
+
+function fitJuryName() {
+    fitElementFont(juryNameDisplay, "--jury-name-font-size", 2.25, 1.05, 0.05);
+}
+
+function setJuryName(name) {
+    const juryName = String(name || "").trim();
+
+    juryNameDisplay.textContent = juryName || "Nome do Jurado";
+    fitJuryName();
 }
 
 function fitAdminHeader() {
@@ -1073,7 +1085,6 @@ function validateNote() {
 }
 
 function getEvaluationPayload() {
-    const formData = new FormData(evaluationForm);
     const note = validateNote();
 
     return {
@@ -1081,7 +1092,7 @@ function getEvaluationPayload() {
         acao: "avaliacao",
         dataHora: new Date().toISOString(),
         avaliador: state.usuario,
-        jurado: formData.get("jurado"),
+        jurado: state.usuario,
         juradoId: state.juradoId,
         login: state.login,
         token: state.token,
@@ -1167,7 +1178,7 @@ async function restoreSavedSession() {
         return;
     }
 
-    document.querySelector("#jurado").value = state.usuario;
+    setJuryName(state.usuario);
     setWaitingForJurors(false);
     setScreen("evaluation");
     await loadCurrentPoem();
@@ -1207,7 +1218,7 @@ loginForm.addEventListener("submit", async (event) => {
         return;
     }
 
-    document.querySelector("#jurado").value = state.usuario;
+    setJuryName(state.usuario);
     setWaitingForJurors(false);
     state.currentScreen = "evaluation";
     saveSessionEverywhere();
@@ -1257,7 +1268,7 @@ evaluationForm.addEventListener("submit", async (event) => {
             console.info("Avaliação pronta para envio:", payload);
         }
 
-        document.querySelector("#jurado").value = state.usuario;
+        setJuryName(state.usuario);
     } catch (error) {
         state.pendingNoteConfirmation = null;
         restoreNoteAfterSendFailure(payload.nota, previousSubmittedNote);
@@ -1350,6 +1361,7 @@ backToAdminButton.addEventListener("click", async () => {
 
 window.addEventListener("resize", () => {
     if (evaluationScreen.classList.contains("is-active")) {
+        fitJuryName();
         fitPoemHeader();
         fitPoemText();
     }
@@ -1380,6 +1392,7 @@ function logout() {
     state.currentPoemPickerTouched = false;
     state.pendingCurrentPoemConfirmation = null;
     state.pendingNoteConfirmation = null;
+    setJuryName("");
     evaluationForm.reset();
     resetNoteEntry();
     loginForm.reset();
