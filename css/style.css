@@ -338,31 +338,10 @@ button {
 }
 
 .waiting-ornament {
-    display: flex;
-    align-items: center;
+    display: block;
     width: 37rem;
-    color: var(--blue);
-}
-
-.waiting-ornament::before,
-.waiting-ornament::after {
-    content: "";
-    flex: 1 1 auto;
-    height: 0.16rem;
-    background: currentColor;
-}
-
-.waiting-ornament span {
-    width: 0.86rem;
-    height: 0.86rem;
-    margin: 0 3.4rem;
-    background: currentColor;
-    box-shadow:
-        -2.35rem 0 0 -0.12rem currentColor,
-        -1.2rem 0 0 -0.04rem currentColor,
-        1.2rem 0 0 -0.04rem currentColor,
-        2.35rem 0 0 -0.12rem currentColor;
-    transform: rotate(45deg);
+    height: auto;
+    object-fit: contain;
 }
 
 .recital-waiting-ticket {
@@ -378,7 +357,7 @@ button {
     text-align: center;
 }
 
-.recital-waiting-state img {
+.waiting-school-logo {
     width: 7.1rem;
     height: 7.1rem;
     margin-top: 0.35rem;

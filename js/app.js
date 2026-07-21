@@ -101,7 +101,7 @@ const POEM_FONT_MAX = 1.65;
 const POEM_FONT_MIN = 0.72;
 const POEM_FONT_FALLBACK_MIN = 0.56;
 const POEM_FONT_STEP = 0.04;
-const AUTO_REFRESH_MS = 5000;
+const AUTO_REFRESH_MS = 3000;
 const SESSION_STORAGE_KEY = "recitalJohasSession";
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
 
