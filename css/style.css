@@ -905,7 +905,7 @@ body.classification-open .site-footer {
     place-items: center;
     min-height: 3.95rem;
     padding: 0 1.8rem;
-    color: var(--blue-dim);
+    color: #fff;
     font-size: 1.58rem;
     font-style: italic;
     font-weight: 700;
@@ -947,7 +947,7 @@ body.classification-open .site-footer {
     min-width: 8.6rem;
     min-height: 8rem;
     padding: 0 0.7rem;
-    color: var(--blue-dim);
+    color: #fff;
     font-size: 2.6rem;
     font-style: italic;
     font-weight: 700;
