@@ -40,6 +40,8 @@ const state = {
     currentPoemGroups: [],
     currentPoemPickerTouched: false,
     pendingCurrentPoemConfirmation: null,
+    waitingMode: false,
+    pendingWaitingModeConfirmation: null,
     pendingNoteConfirmation: null,
     currentScreen: "login"
 };
@@ -80,6 +82,9 @@ const mediaGeral = document.querySelector("#mediaGeral");
 const classificationRanking = document.querySelector("#classificationRanking");
 const currentPoemSelect = document.querySelector("#currentPoemSelect");
 const juryNameDisplay = document.querySelector("#juradoDisplay");
+const evaluationLayout = document.querySelector("#evaluationLayout");
+const recitalWaitingState = document.querySelector("#recitalWaitingState");
+const waitingModeToggle = document.querySelector("#waitingModeToggle");
 
 const loginCredentials = Array.from(document.querySelectorAll("#loginCredentials [data-login][data-senha]"));
 const senhaInput = document.querySelector("#senha");
@@ -222,6 +227,10 @@ function setScreen(screenName) {
     document.body.classList.toggle("evaluation-open", isEvaluation);
     document.body.classList.toggle("admin-open", isAdmin);
     document.body.classList.toggle("classification-open", isClassification);
+    document.body.classList.toggle(
+        "waiting-open",
+        isEvaluation && evaluationScreen.classList.contains("is-waiting")
+    );
     backToAdminButton.hidden = !isAdminUser();
 
     if (isLogin) {
@@ -364,6 +373,56 @@ function clearSavedSessionEverywhere() {
 function setMessage(element, message = "", type = "error") {
     element.textContent = message;
     element.classList.toggle("success", type === "success");
+}
+
+function setEvaluationWaiting(isWaiting) {
+    const waiting = Boolean(isWaiting);
+
+    state.waitingMode = waiting;
+    evaluationScreen.classList.toggle("is-waiting", waiting);
+    recitalWaitingState.setAttribute("aria-hidden", String(!waiting));
+    evaluationLayout.setAttribute("aria-hidden", String(waiting));
+    document.body.classList.toggle(
+        "waiting-open",
+        waiting && evaluationScreen.classList.contains("is-active")
+    );
+}
+
+function animatePoetryChange() {
+    evaluationLayout.classList.remove("is-poetry-changing");
+    void evaluationLayout.offsetWidth;
+    evaluationLayout.classList.add("is-poetry-changing");
+
+    window.setTimeout(() => {
+        evaluationLayout.classList.remove("is-poetry-changing");
+    }, 700);
+}
+
+function renderWaitingModeControl(control = {}) {
+    const hasConfirmedValue = Object.prototype.hasOwnProperty.call(control, "modoEspera");
+    const confirmedValue = hasConfirmedValue ? Boolean(control.modoEspera) : state.waitingMode;
+    const pendingConfirmation = state.pendingWaitingModeConfirmation;
+    const pendingIsConfirmed = Boolean(
+        hasConfirmedValue
+        && pendingConfirmation
+        && confirmedValue === pendingConfirmation.active
+    );
+    const pendingHasExpired = Boolean(
+        pendingConfirmation
+        && Date.now() >= pendingConfirmation.expiresAt
+    );
+    const waiting = pendingConfirmation && !pendingIsConfirmed && !pendingHasExpired
+        ? pendingConfirmation.active
+        : confirmedValue;
+
+    if (pendingIsConfirmed || pendingHasExpired) {
+        state.pendingWaitingModeConfirmation = null;
+    }
+
+    state.waitingMode = waiting;
+    waitingModeToggle.classList.toggle("is-active", waiting);
+    waitingModeToggle.setAttribute("aria-pressed", String(waiting));
+    waitingModeToggle.textContent = waiting ? "Exibir poesia atual" : "Exibir tela de espera";
 }
 
 function setWaitingForJurors(isWaiting) {
@@ -736,6 +795,7 @@ function renderAdminData(data = {}) {
     mediaPoema.textContent = formatGrade(medias.poema ?? data.mediaPoema);
     mediaGeral.textContent = formatGrade(medias.geral ?? data.mediaGeral);
     renderCurrentPoemControl(data);
+    renderWaitingModeControl(data.controle || {});
 
     adminJurorList.replaceChildren(...jurorSlots.map((jurado) => {
         const row = document.createElement("div");
@@ -765,11 +825,13 @@ async function loadCurrentPoem({ silent = false } = {}) {
 
     if (!silent) {
         setMessage(poemMessage, "Carregando poesia atual...", "success");
-        renderPoem(DEMO_POEM);
+        setEvaluationWaiting(true);
     }
 
     if (!APPS_SCRIPT_URL) {
         if (!silent) {
+            setEvaluationWaiting(false);
+            renderPoem(DEMO_POEM);
             setMessage(poemMessage, "");
         }
         poemRefreshInProgress = false;
@@ -795,13 +857,28 @@ async function loadCurrentPoem({ silent = false } = {}) {
             throw new Error(data.erro);
         }
 
+        if (data.aguardando) {
+            setEvaluationWaiting(true);
+            setMessage(poemMessage, "");
+            return;
+        }
+
+        const wasWaiting = evaluationScreen.classList.contains("is-waiting");
+        const poemChanged = String(previousPoemId) !== String(data.id ?? "");
+
+        setEvaluationWaiting(false);
         renderPoem(data);
-        applyEvaluationState(data, {
-            poemChanged: String(previousPoemId) !== String(data.id ?? "")
-        });
+        applyEvaluationState(data, { poemChanged });
+
+        if (poemChanged || wasWaiting) {
+            animatePoetryChange();
+        }
+
         setMessage(poemMessage, "");
     } catch (error) {
         if (!silent) {
+            setEvaluationWaiting(false);
+            renderPoem(DEMO_POEM);
             setMessage(poemMessage, "Não foi possível atualizar pela planilha. Exibindo o exemplo local.");
         }
     } finally {
@@ -859,8 +936,15 @@ async function loadAdminData({ silent = false } = {}) {
             && confirmedPoemId !== pendingConfirmation.poemId
             && Date.now() < pendingConfirmation.expiresAt
         );
+        const confirmedWaitingMode = Boolean(data.controle?.modoEspera);
+        const pendingWaitingConfirmation = state.pendingWaitingModeConfirmation;
+        const shouldWaitForWaitingConfirmation = Boolean(
+            pendingWaitingConfirmation
+            && confirmedWaitingMode !== pendingWaitingConfirmation.active
+            && Date.now() < pendingWaitingConfirmation.expiresAt
+        );
 
-        if (shouldWaitForConfirmation) {
+        if (shouldWaitForConfirmation || shouldWaitForWaitingConfirmation) {
             return;
         }
 
@@ -942,6 +1026,70 @@ async function changeCurrentPoem(poemId) {
         });
     } finally {
         setCurrentPoemPickerDisabled(false);
+    }
+}
+
+async function changeWaitingMode() {
+    if (!isAdminUser()) {
+        return;
+    }
+
+    if (!APPS_SCRIPT_URL) {
+        setMessage(adminMessage, "Configure a URL do Apps Script para controlar a tela de espera.");
+        return;
+    }
+
+    if (!state.token) {
+        setMessage(adminMessage, "Faça login como administrador para controlar a tela de espera.");
+        return;
+    }
+
+    const previousMode = state.waitingMode;
+    const nextMode = !previousMode;
+
+    state.pendingWaitingModeConfirmation = null;
+    state.waitingMode = nextMode;
+    renderWaitingModeControl({});
+    state.pendingWaitingModeConfirmation = {
+        active: nextMode,
+        previousMode,
+        expiresAt: Date.now() + AUTO_REFRESH_MS
+    };
+    waitingModeToggle.disabled = true;
+    setMessage(
+        adminMessage,
+        nextMode
+            ? "Tela de espera ativada. Confirmando na planilha..."
+            : "Poesia atual exibida. Confirmando na planilha...",
+        "success"
+    );
+
+    try {
+        await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify({
+                acao: "modoEspera",
+                token: state.token,
+                ativo: nextMode
+            })
+        });
+
+        setMessage(
+            adminMessage,
+            nextMode ? "Tela de espera ativada." : "Poesia atual exibida.",
+            "success"
+        );
+    } catch (error) {
+        state.pendingWaitingModeConfirmation = null;
+        state.waitingMode = previousMode;
+        renderWaitingModeControl({});
+        setMessage(adminMessage, error.message || "Não foi possível alterar a tela de espera.");
+    } finally {
+        waitingModeToggle.disabled = false;
     }
 }
 
@@ -1379,6 +1527,8 @@ currentPoemSelect.addEventListener("change", () => {
     changeCurrentPoem(currentPoemSelect.value);
 });
 
+waitingModeToggle.addEventListener("click", changeWaitingMode);
+
 categoryButtons.forEach((button) => {
     button.addEventListener("click", () => {
         state.selectedCategory = button.dataset.category || "A";
@@ -1452,7 +1602,11 @@ function logout() {
     state.currentPoemGroups = [];
     state.currentPoemPickerTouched = false;
     state.pendingCurrentPoemConfirmation = null;
+    state.waitingMode = false;
+    state.pendingWaitingModeConfirmation = null;
     state.pendingNoteConfirmation = null;
+    setEvaluationWaiting(false);
+    renderWaitingModeControl({});
     setJuryName("");
     evaluationForm.reset();
     resetNoteEntry();
