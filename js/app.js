@@ -1,7 +1,7 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyt-JUocBX3tT5lkw0kKnr1ZjMCbk_4rINbk_VVNAHuiYLRfAQGmS6uTinlIy2LpKNg/exec";
 const DEMO_POEM = {
     id: "A1",
-    nome: "Poema 1",
+    nome: "Poesia 1",
     declamador: "Nome do Declamador",
     autor: "Nome do Autor",
     texto: "O vento sorriu,\nna testa mora o brilho.\nPente aposentou.",
@@ -16,7 +16,7 @@ const CLASSIFICATION_LABELS = {
 
 const CRITERION_LABELS = {
     declamacao: "Declamação",
-    poema: "Poema",
+    poema: "Poesia",
     total: "Total"
 };
 
@@ -578,7 +578,7 @@ function renderPoemText(text) {
 
 function renderPoem(poem) {
     state.poema = poem;
-    const poemLabel = poem.nome || poem.titulo || (poem.id ? `Poema ${poem.id}` : "Nome do Poema");
+    const poemLabel = poem.nome || poem.titulo || (poem.id ? `Poesia ${poem.id}` : "Nome da Poesia");
 
     poemTitle.textContent = poemLabel;
     poemAuthor.textContent = poem.autor || "Nome do Autor";
@@ -594,7 +594,7 @@ function getCategoryIdFromPoemId(poemId) {
 
 function getCurrentPoemLabel(poem = {}) {
     const id = String(poem.id || "").trim();
-    const name = String(poem.nome || poem.titulo || (id ? `Poema ${id}` : "")).trim();
+    const name = String(poem.nome || poem.titulo || (id ? `Poesia ${id}` : "")).trim();
     const author = String(poem.autor || "").trim();
     const declamador = String(poem.declamador || "").trim();
 
@@ -641,8 +641,8 @@ function renderCurrentPoemControl(data = {}) {
 
     placeholder.value = "";
     placeholder.textContent = poems.length
-        ? "ID / Nome do Poema / Autor / Declamador"
-        : "Nenhum poema encontrado nesta categoria";
+        ? "ID / Nome da Poesia / Autor / Declamador"
+        : "Nenhuma poesia encontrada nesta categoria";
     placeholder.disabled = true;
 
     currentPoemSelect.replaceChildren(
@@ -729,7 +729,7 @@ function renderAdminData(data = {}) {
         };
     });
 
-    adminTitle.textContent = poem.nome || poem.titulo || (poem.id ? `Poema ${poem.id}` : "Nome do Poema");
+    adminTitle.textContent = poem.nome || poem.titulo || (poem.id ? `Poesia ${poem.id}` : "Nome da Poesia");
     adminPoemAuthor.textContent = poem.autor || "Nome do Autor";
     adminPoemDeclamador.textContent = poem.declamador || poem.titulo || "Nome do Declamador";
     mediaDeclamacao.textContent = formatGrade(medias.declamacao ?? data.mediaDeclamacao);
@@ -764,7 +764,7 @@ async function loadCurrentPoem({ silent = false } = {}) {
     const previousPoemId = state.poema?.id ?? "";
 
     if (!silent) {
-        setMessage(poemMessage, "Carregando poema atual...", "success");
+        setMessage(poemMessage, "Carregando poesia atual...", "success");
         renderPoem(DEMO_POEM);
     }
 
@@ -786,7 +786,7 @@ async function loadCurrentPoem({ silent = false } = {}) {
         });
 
         if (!response.ok) {
-            throw new Error("Não foi possível carregar o poema.");
+            throw new Error("Não foi possível carregar a poesia.");
         }
 
         const data = await response.json();
@@ -886,17 +886,17 @@ async function changeCurrentPoem(poemId) {
     }
 
     if (selectedPoemId === state.currentPoemId) {
-        setMessage(adminMessage, `Poema atual já está em ${selectedPoemId}.`, "success");
+        setMessage(adminMessage, `A poesia atual já é ${selectedPoemId}.`, "success");
         return;
     }
 
     if (!APPS_SCRIPT_URL) {
-        setMessage(adminMessage, "Configure a URL do Apps Script para alterar o poema atual.");
+        setMessage(adminMessage, "Configure a URL do Apps Script para alterar a poesia atual.");
         return;
     }
 
     if (!state.token) {
-        setMessage(adminMessage, "Faça login como administrador para alterar o poema atual.");
+        setMessage(adminMessage, "Faça login como administrador para alterar a poesia atual.");
         return;
     }
 
@@ -914,7 +914,7 @@ async function changeCurrentPoem(poemId) {
         expiresAt: Date.now() + AUTO_REFRESH_MS
     };
     setCurrentPoemPickerDisabled(true);
-    setMessage(adminMessage, `Poema atual selecionado: ${selectedPoemId}. Confirmando na planilha...`, "success");
+    setMessage(adminMessage, `Poesia atual selecionada: ${selectedPoemId}. Confirmando na planilha...`, "success");
 
     try {
         await fetch(APPS_SCRIPT_URL, {
@@ -930,10 +930,10 @@ async function changeCurrentPoem(poemId) {
             })
         });
 
-        setMessage(adminMessage, `Poema atual selecionado: ${selectedPoemId}.`, "success");
+        setMessage(adminMessage, `Poesia atual selecionada: ${selectedPoemId}.`, "success");
     } catch (error) {
         state.pendingCurrentPoemConfirmation = null;
-        setMessage(adminMessage, error.message || "Não foi possível alterar o poema atual.");
+        setMessage(adminMessage, error.message || "Não foi possível alterar a poesia atual.");
         renderCurrentPoemControl({
             controle: {
                 poemaAtualId: previousPoemId,
@@ -1070,7 +1070,7 @@ function renderClassification() {
         position.textContent = item.posicao || `${index + 1}º`;
         main.textContent = buildRankingTitle(item);
         turma.textContent = item.turma || "Turma";
-        poem.textContent = item.nomePoema || "Poema";
+        poem.textContent = item.nomePoema || "Poesia";
         score.textContent = formatGrade(item.nota, { placeholder: "Nota" });
 
         sub.append(turma, poem);
