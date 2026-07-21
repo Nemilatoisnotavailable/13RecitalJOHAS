@@ -20,11 +20,14 @@ const CRITERION_LABELS = {
     total: "Total"
 };
 
+const MODERATOR_JUROR_ID = "9";
+
 const state = {
     usuario: "",
     juradoId: "",
     login: "",
     token: "",
+    perfil: "",
     poema: null,
     submittedNote: "",
     pendingReplacementNote: "",
@@ -106,6 +109,28 @@ function normalizeLogin(value) {
     return value.trim().toLowerCase();
 }
 
+function getUserProfile(juradoId, profile = "") {
+    const normalizedProfile = String(profile || "").trim().toLowerCase();
+
+    if (["admin", "moderador", "jurado"].includes(normalizedProfile)) {
+        return normalizedProfile;
+    }
+
+    const id = String(juradoId ?? "");
+
+    if (id === "0") return "admin";
+    if (id === MODERATOR_JUROR_ID) return "moderador";
+    return "jurado";
+}
+
+function isAdminUser() {
+    return state.perfil === "admin" || String(state.juradoId) === "0";
+}
+
+function isModeratorUser() {
+    return state.perfil === "moderador" || String(state.juradoId) === MODERATOR_JUROR_ID;
+}
+
 function findCredential(usuario, senha) {
     const normalizedUser = normalizeLogin(usuario);
 
@@ -179,6 +204,10 @@ async function authenticateUser(usuario, senha) {
 }
 
 function setScreen(screenName) {
+    if (screenName === "admin" && !isAdminUser()) {
+        screenName = isModeratorUser() ? "classification" : "login";
+    }
+
     const isEvaluation = screenName === "evaluation";
     const isAdmin = screenName === "admin";
     const isClassification = screenName === "classification";
@@ -193,6 +222,7 @@ function setScreen(screenName) {
     document.body.classList.toggle("evaluation-open", isEvaluation);
     document.body.classList.toggle("admin-open", isAdmin);
     document.body.classList.toggle("classification-open", isClassification);
+    backToAdminButton.hidden = !isAdminUser();
 
     if (isLogin) {
         stopAutoRefresh();
@@ -204,7 +234,7 @@ function setScreen(screenName) {
 }
 
 function saveSession() {
-    if (!state.juradoId) {
+    if (String(state.juradoId) === "") {
         return;
     }
 
@@ -214,6 +244,7 @@ function saveSession() {
             juradoId: state.juradoId,
             login: state.login,
             token: state.token,
+            perfil: state.perfil,
             currentScreen: state.currentScreen,
             selectedCategory: state.selectedCategory,
             selectedCriterion: state.selectedCriterion,
@@ -234,7 +265,7 @@ function readSavedSession() {
 
         const savedSession = JSON.parse(rawSession);
 
-        if (!savedSession?.juradoId || Date.now() > Number(savedSession.expiresAt || 0)) {
+        if (String(savedSession?.juradoId ?? "") === "" || Date.now() > Number(savedSession.expiresAt || 0)) {
             clearSavedSession();
             return null;
         }
@@ -255,7 +286,7 @@ function clearSavedSession() {
 }
 
 function saveSessionEverywhere() {
-    if (!state.juradoId) {
+    if (String(state.juradoId) === "") {
         return;
     }
 
@@ -264,6 +295,7 @@ function saveSessionEverywhere() {
         juradoId: state.juradoId,
         login: state.login,
         token: state.token,
+        perfil: state.perfil,
         currentScreen: state.currentScreen,
         selectedCategory: state.selectedCategory,
         selectedCriterion: state.selectedCriterion,
@@ -307,7 +339,7 @@ function readSavedSessionEverywhere() {
     try {
         const savedSession = JSON.parse(rawSession);
 
-        if (!savedSession?.juradoId || Date.now() > Number(savedSession.expiresAt || 0)) {
+        if (String(savedSession?.juradoId ?? "") === "" || Date.now() > Number(savedSession.expiresAt || 0)) {
             clearSavedSessionEverywhere();
             return null;
         }
@@ -778,6 +810,10 @@ async function loadCurrentPoem({ silent = false } = {}) {
 }
 
 async function loadAdminData({ silent = false } = {}) {
+    if (!isAdminUser()) {
+        return;
+    }
+
     if (adminRefreshInProgress) {
         return;
     }
@@ -838,6 +874,10 @@ async function loadAdminData({ silent = false } = {}) {
 }
 
 async function changeCurrentPoem(poemId) {
+    if (!isAdminUser()) {
+        return;
+    }
+
     const selectedPoemId = String(poemId || "").trim();
     const previousPoemId = state.currentPoemId;
 
@@ -1160,11 +1200,18 @@ async function restoreSavedSession() {
     state.juradoId = savedSession.juradoId ?? "";
     state.login = savedSession.login || "";
     state.token = savedSession.token || "";
+    state.perfil = getUserProfile(state.juradoId, savedSession.perfil);
     state.selectedCategory = savedSession.selectedCategory || "A";
     state.selectedCriterion = savedSession.selectedCriterion || "declamacao";
     setMessage(loginMessage, "");
 
-    if (String(state.juradoId) === "0") {
+    if (isModeratorUser()) {
+        setScreen("classification");
+        await loadClassificationData();
+        return;
+    }
+
+    if (isAdminUser()) {
         const screen = savedSession.currentScreen === "classification" ? "classification" : "admin";
 
         setScreen(screen);
@@ -1208,9 +1255,18 @@ loginForm.addEventListener("submit", async (event) => {
     state.juradoId = credential.juradoId ?? "";
     state.login = credential.login || usuario;
     state.token = credential.token || "";
+    state.perfil = getUserProfile(state.juradoId, credential.perfil);
     setMessage(loginMessage, "");
 
-    if (String(state.juradoId) === "0") {
+    if (isModeratorUser()) {
+        state.currentScreen = "classification";
+        saveSessionEverywhere();
+        setScreen("classification");
+        await loadClassificationData();
+        return;
+    }
+
+    if (isAdminUser()) {
         state.currentScreen = "admin";
         saveSessionEverywhere();
         setScreen("admin");
@@ -1355,6 +1411,10 @@ openClassificationButton.addEventListener("click", async () => {
 });
 
 backToAdminButton.addEventListener("click", async () => {
+    if (!isAdminUser()) {
+        return;
+    }
+
     setScreen("admin");
     await loadAdminData();
 });
@@ -1381,6 +1441,7 @@ function logout() {
     state.juradoId = "";
     state.login = "";
     state.token = "";
+    state.perfil = "";
     state.poema = null;
     state.submittedNote = "";
     state.pendingReplacementNote = "";
